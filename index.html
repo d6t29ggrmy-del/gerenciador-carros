@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<!-- Gerenciador de Aluguel de Carros | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
+<!-- Gerenciador de Aluguel de Carros | v1.4 | 04/11/2026 08:10 | frequência por locação (padrão a cada 2 dias ou por fases: mensal na 1ª terça até a data escolhida, depois toda terça, quarta como repescagem), pesquisa extra no dia da parada, campos de entrada em #DDEBF7 | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Gerenciador de Aluguel</title>
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Aluguel">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-:root{--navy:#13294B;--ceu:#6FB0E8;--papel:#F5F8FB;--tinta:#1C2430;--suave:#5B6B80;--input:#EBFFFF;--ok:#2E7D55;--alerta:#B7791F;--erro:#B03A2E;--linha:#D5DEE8;
+:root{--navy:#13294B;--ceu:#6FB0E8;--papel:#F5F8FB;--tinta:#1C2430;--suave:#5B6B80;--input:#DDEBF7;--ok:#2E7D55;--alerta:#B7791F;--erro:#B03A2E;--linha:#D5DEE8;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 *,*::before,*::after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px);font-size:17px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -112,7 +112,7 @@ header .execucao{max-width:24rem;color:#FFD54F}
   <div class="lado">
   <div class="topo-dir"><button class="btn-topo" id="btnAtualizar">Atualizar dados</button><button class="btn-topo" id="btnEsquecer">Desconectar este navegador</button></div>
   <div class="execucao" id="execucao">Última execução: carregando…</div>
-  <div class="selo" aria-label="Versão do Gerenciador">v1.3 · 20-out-26<br>6:38 pm</div>
+  <div class="selo" aria-label="Versão do Gerenciador">v1.4 · 04-nov-26<br>8:10 am</div>
   </div>
 </div></header>
 <main class="wrap">
@@ -177,6 +177,14 @@ header .execucao{max-width:24rem;color:#FFD54F}
       <div><label for="target">Preço-alvo em US$ (opcional)</label><input id="target" type="number" min="1" inputmode="numeric" placeholder="em branco = só melhor preço">
         <div class="dica">O robô avisa quando surgir algo mais barato que o melhor já visto, ou abaixo deste alvo.</div></div>
     </div>
+    <h3>Frequência das pesquisas</h3>
+    <div class="grade">
+      <div><label for="frequencia">Frequência</label>
+        <select id="frequencia"><option value="padrao">Padrão (a cada 2 dias)</option><option value="fases">Por fases (mensal, depois semanal)</option></select>
+        <div class="dica">Por fases: 1ª terça de cada mês até a data abaixo, depois toda terça. Se a terça falhar, tenta de novo na quarta.</div></div>
+      <div id="caixaMensal" hidden><label for="mensalAte">Fase mensal até</label><input id="mensalAte" type="date">
+        <div class="dica">Depois desta data a pesquisa passa a ser semanal.</div></div>
+    </div>
     <div class="previa" id="previa">Preencha nome, local e datas para ver o resumo.</div>
     <div class="acoes"><button class="principal" id="btnSalvar" type="submit" disabled>Salvar locação</button><button class="secundario" type="reset">Limpar</button></div>
     <div id="msg"></div>
@@ -194,7 +202,7 @@ const REPO = "d6t29ggrmy-del/bot-aluguel", RAMO = "main";
 const PARADA_DIAS = 30, INTERVALO_DIAS = 2;
 const CAMPOS = ["id","pais","codigo","retirada_local","devolucao_local","retirada","hora_retirada","devolucao","hora_devolucao",
   "pessoas","malas_medias","categorias","cambio","condutores_adicionais","km_livre","cancelamento_gratis","pagar_retirada","sem_protecao",
-  "excluir_locadoras","target","status","parar_em"];
+  "excluir_locadoras","target","status","parar_em","frequencia","mensal_ate"];
 const SITES = { "Brasil": ["Rentcars","Movida","Unidas","Priceline"] };
 const TOKENS = { "Rentcars": 15, "Movida": 10, "Unidas": 10, "Priceline": 15 };
 const MESES = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
@@ -300,6 +308,21 @@ function prepararData(nativo){
   nativo._sync = () => { texto.value = isoParaTexto(nativo.value); texto.classList.remove("invalido"); };
 }
 
+// ---------- frequência ----------
+const ehFases = v => v.frequencia === "fases";
+function freqTxt(v){ return ehFases(v) ? "por fases (1ª terça do mês até " + brAno(v.mensal_ate) + ", depois toda terça)" : "a cada " + INTERVALO_DIAS + " dias"; }
+function contarExecucoes(v){
+  const hoje = hojeChicago(), fim = v.parar_em;
+  if (fim <= hoje) return 0;
+  if (!ehFases(v)) return Math.floor(dias(hoje, fim) / INTERVALO_DIAS) + 1 + 1;
+  let n = 0, d = somaDias(hoje, 1);
+  while (d < fim) {
+    if (new Date(d + "T12:00:00Z").getUTCDay() === 2 && (d > v.mensal_ate || +d.slice(8,10) <= 7)) n++;
+    d = somaDias(d, 1);
+  }
+  return n + 1;
+}
+
 // ---------- montagem da nova locação ----------
 function limpaNome(t){ return t.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-|-$/g,""); }
 const sn = el => el.checked ? "sim" : "nao";
@@ -309,7 +332,8 @@ function montarLinha(){
     retLocal: $("#retLocal").value.trim(), devLocal: $("#devLocal").value.trim(),
     ret: $("#retData").value, retHora: $("#retHora").value, dev: $("#devData").value, devHora: $("#devHora").value,
     pessoas: $("#pessoas").value || "1", malas: $("#malas").value || "0", cambio: $("#cambio").value, cond: $("#condutores").value || "0",
-    excluir: $("#excluir").value.split(";").map(s => s.trim()).filter(Boolean).join("; "), target: $("#target").value.trim() };
+    excluir: $("#excluir").value.split(";").map(s => s.trim()).filter(Boolean).join("; "), target: $("#target").value.trim(),
+    freq: $("#frequencia").value, mensal: $("#mensalAte").value };
   const erros = [];
   if (!f.nome) erros.push("Informe o nome principal.");
   if (!f.codigo) erros.push("Informe o código do local (ex.: GRU).");
@@ -319,6 +343,7 @@ function montarLinha(){
   if (!f.retHora || !f.devHora) erros.push("Informe os horários.");
   if (!cats.length) erros.push("Marque pelo menos uma categoria.");
   if (f.target && !(+f.target > 0)) erros.push("O preço-alvo precisa ser maior que zero.");
+  if (f.freq === "fases" && !f.mensal) erros.push("Informe até quando vai a fase mensal.");
   if (erros.length) return { erros };
   const id = f.nome + "-" + f.codigo + "-" + MESES[+f.ret.slice(5,7) - 1] + f.ret.slice(2,4);
   const parar = somaDias(f.ret, -PARADA_DIAS);
@@ -326,7 +351,9 @@ function montarLinha(){
     retirada: f.ret, hora_retirada: f.retHora, devolucao: f.dev, hora_devolucao: f.devHora,
     pessoas: f.pessoas, malas_medias: f.malas, categorias: cats.join(";"), cambio: f.cambio, condutores_adicionais: f.cond,
     km_livre: sn($("#kmLivre")), cancelamento_gratis: sn($("#cancelGratis")), pagar_retirada: sn($("#pagarRetirada")), sem_protecao: sn($("#semProtecao")),
-    excluir_locadoras: f.excluir, target: f.target ? String(Math.round(+f.target)) : "", status: "ativa", parar_em: parar };
+    excluir_locadoras: f.excluir, target: f.target ? String(Math.round(+f.target)) : "", status: "ativa", parar_em: parar,
+    frequencia: f.freq === "fases" ? "fases" : "", mensal_ate: f.freq === "fases" ? f.mensal : "" };
+  if (f.freq === "fases" && f.mensal >= parar) erros.push("A fase mensal precisa terminar antes da parada (" + brAno(parar) + ").");
   if (parar <= hojeChicago()) erros.push("A retirada é daqui a menos de 30 dias: o robô encerraria a busca na primeira execução.");
   if (locacoes.some(v => v.id === id)) erros.push("Já existe uma locação com o nome " + id + ".");
   return { linha, erros, id, parar };
@@ -338,7 +365,7 @@ function atualizarPrevia(){
   $("#dicaPais").textContent = "Sites pesquisados: " + sitesDe($("#pais").value).join(", ") + ".";
   if (!r.linha) { p.innerHTML = r.erros.length && ($("#nome").value || $("#codigo").value || $("#retData").value) ? '<span class="erro">' + r.erros[0] + '</span>' : "Preencha nome, local e datas para ver o resumo."; return; }
   const l = r.linha, diarias = Math.max(1, Math.ceil((dias(l.retirada, l.devolucao) * 24 + (+l.hora_devolucao.slice(0,2) - +l.hora_retirada.slice(0,2))) / 24));
-  const execs = Math.max(0, Math.floor(dias(hojeChicago(), r.parar) / INTERVALO_DIAS) + 1), tk = tokensExec(l.pais);
+  const execs = contarExecucoes(l), tk = tokensExec(l.pais);
   const cond = [l.km_livre === "sim" ? "quilometragem livre" : "", l.cancelamento_gratis === "sim" ? "cancelamento grátis" : "",
     l.pagar_retirada === "sim" ? "nada a pagar agora" : "", l.sem_protecao === "sim" ? "sem proteção" : ""].filter(Boolean).join(", ");
   let aviso = "";
@@ -346,7 +373,7 @@ function atualizarPrevia(){
   p.innerHTML = "Nome: <code>" + l.id + "</code> | " + diarias + " diária" + (diarias > 1 ? "s" : "") +
     "<br>Carro: " + categoriasTxt(l.categorias) + ", " + cambioTxt(l.cambio) + ", " + l.pessoas + " pessoa" + (+l.pessoas > 1 ? "s" : "") + " e " + l.malas_medias + " mala" + (+l.malas_medias === 1 ? "" : "s") + " média" + (+l.malas_medias === 1 ? "" : "s") + "." +
     "<br>Condições: " + (cond || "nenhuma exigência") + "." + (l.excluir_locadoras ? " Exclui: " + l.excluir_locadoras + "." : "") +
-    "<br>Sites: " + sitesDe(l.pais).join(", ") + ". Parada automática em " + brAno(r.parar) + "." +
+    "<br>Sites: " + sitesDe(l.pais).join(", ") + ". Frequência: " + freqTxt(l) + ". Parada automática em " + brAno(r.parar) + ", com uma última pesquisa nesse dia." +
     "<br>Custo estimado: ~" + tk + " mil tokens por execução, cerca de " + execs + " execuções até a parada (~" + Math.round(execs * tk) + " mil tokens)." +
     aviso + (r.erros.length ? '<br><span class="erro">' + r.erros.join(" ") + '</span>' : "");
 }
@@ -392,6 +419,7 @@ function desenharLista(){
       '<div class="precos">Melhor preço atual: <b>' + (a.ultimo_preco ? usd(a.ultimo_preco) + (a.ultimo_locadora ? " (" + a.ultimo_locadora + ")" : "") : "aguardando execução") +
       "</b> | Menor já visto: <b>" + (a.menor_preco ? usd(a.menor_preco) : "—") + "</b> | Alvo: <b>" + (v.target ? usd(+v.target) : "só melhor preço") + "</b></div>" +
       '<div class="meta">Sites: ' + sitesDe(v.pais).join(", ") + (v.excluir_locadoras ? " | Exclui: " + v.excluir_locadoras : "") + " | Parada em " + brAno(v.parar_em) + "</div>" +
+      '<div class="meta">Frequência: ' + freqTxt(v) + "</div>" +
       '<button class="verOfertas" type="button" aria-expanded="false">Ver ofertas encontradas</button><div class="ofertas"></div>' +
       '<div class="editar"><input type="number" min="1" inputmode="numeric" placeholder="US$ (vazio = sem alvo)"><button class="principal">Salvar</button><button class="secundario">Cancelar</button></div>' +
       '<div class="editarDatas"><div><label>Nova retirada</label><input type="date" data-c="ret"></div><div><label>Nova devolução</label><input type="date" data-c="dev"></div>' +
@@ -460,7 +488,7 @@ async function carregar(silencioso){
   historico = parseCsv(hist);
   const ativas = locacoes.filter(v => v.status === "ativa").length;
   $("#execucao").innerHTML = (estado.ultima_execucao ? "Última execução: " + dataHoraTxt(estado.ultima_execucao) + (estado.ultimo_resultado ? " (" + estado.ultimo_resultado + ")" : "") : "Ainda sem execuções") +
-    "<br>" + ativas + " locaç" + (ativas === 1 ? "ão ativa" : "ões ativas") + " | robô a cada " + INTERVALO_DIAS + " dias";
+    "<br>" + ativas + " locaç" + (ativas === 1 ? "ão ativa" : "ões ativas") + " | robô diário às 5h56, cada locação na sua frequência";
   desenharLista(); atualizarPrevia();
 }
 function toast(t, cls = "certo"){ const m = $("#msg"); m.innerHTML = '<span class="' + cls + '">' + t + "</span>"; }
@@ -475,7 +503,9 @@ function mostrar(conectado){ $("#secToken").hidden = conectado; $("#secNova").hi
 // ---------- eventos ----------
 $("#form").addEventListener("input", atualizarPrevia);
 $("#form").addEventListener("change", atualizarPrevia);
-prepararData($("#retData")); prepararData($("#devData"));
+$("#frequencia").addEventListener("change", () => { $("#caixaMensal").hidden = $("#frequencia").value !== "fases"; });
+$("#form").addEventListener("reset", () => setTimeout(() => { $("#caixaMensal").hidden = true; atualizarPrevia(); }, 0));
+prepararData($("#retData")); prepararData($("#devData")); prepararData($("#mensalAte"));
 $("#form").addEventListener("reset", () => setTimeout(() => { $("#retData")._sync(); $("#devData")._sync(); atualizarPrevia(); $("#msg").innerHTML = ""; }));
 $("#retData").addEventListener("change", () => { if ($("#retData").value) $("#devData").min = $("#retData").value; });
 $("#form").addEventListener("submit", async ev => {
