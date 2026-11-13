@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<!-- Gerenciador de Aluguel de Carros | v1.6 | 12/11/2026 19:07 | repositórios renomeados: dados em bot-carros, página em gerenciador-carros | v1.5 | 12/11/2026 18:34 | botão Editar locação (formulário completo preenchido, nome mantido, histórico recomeça só se as datas mudarem), preços do robô nos cartões, estimativa de tokens medida (~140 mil por pesquisa no Brasil), plural de pessoas/malas, tarefa às terças e quartas | v1.4 | 04/11/2026 08:10 | frequência por locação (padrão a cada 2 dias ou por fases: mensal na 1ª terça até a data escolhida, depois toda terça, quarta como repescagem), pesquisa extra no dia da parada, campos de entrada em #DDEBF7 | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
+<!-- Gerenciador de Aluguel de Carros | v1.7 | 12/11/2026 19:16 | linha de status curta (data + resumo); texto completo ao passar o mouse ou tocar na linha | v1.6 | 12/11/2026 19:07 | repositórios renomeados: dados em bot-carros, página em gerenciador-carros | v1.5 | 12/11/2026 18:34 | botão Editar locação (formulário completo preenchido, nome mantido, histórico recomeça só se as datas mudarem), preços do robô nos cartões, estimativa de tokens medida (~140 mil por pesquisa no Brasil), plural de pessoas/malas, tarefa às terças e quartas | v1.4 | 04/11/2026 08:10 | frequência por locação (padrão a cada 2 dias ou por fases: mensal na 1ª terça até a data escolhida, depois toda terça, quarta como repescagem), pesquisa extra no dia da parada, campos de entrada em #DDEBF7 | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Gerenciador de Aluguel</title>
@@ -104,6 +104,9 @@ footer{padding:0 1.1765rem 1.7647rem;color:var(--suave);font-size:0.8235rem}
 header .lado .selo{align-self:flex-end;text-align:right}
 header .lado{margin-left:auto}
 header .execucao{max-width:24rem;color:#FFD54F}
+#execucao .resumo{cursor:help;text-decoration:underline dotted;text-underline-offset:0.15em}
+#execucao .completo{display:none;font-size:0.8235rem;opacity:.9;margin-top:0.2353rem}
+#execucao.aberto .completo{display:block}
 </style>
 </head>
 <body>
@@ -112,7 +115,7 @@ header .execucao{max-width:24rem;color:#FFD54F}
   <div class="lado">
   <div class="topo-dir"><button class="btn-topo" id="btnAtualizar">Atualizar dados</button><button class="btn-topo" id="btnEsquecer">Desconectar este navegador</button></div>
   <div class="execucao" id="execucao">Última execução: carregando…</div>
-  <div class="selo" aria-label="Versão do Gerenciador">v1.6 · 12-nov-26<br>7:07 pm</div>
+  <div class="selo" aria-label="Versão do Gerenciador">v1.7 · 12-nov-26<br>7:16 pm</div>
   </div>
 </div></header>
 <main class="wrap">
@@ -525,9 +528,18 @@ async function carregar(silencioso){
     lerArquivo("historico_precos.csv").then(r => r.texto).catch(e => { if (e.message === "TOKEN") throw e; return ""; })]);
   historico = parseCsv(hist);
   const ativas = locacoes.filter(v => v.status === "ativa").length;
-  $("#execucao").innerHTML = (estado.ultima_execucao ? "Última execução: " + dataHoraTxt(estado.ultima_execucao) + (estado.ultimo_resultado ? " (" + estado.ultimo_resultado + ")" : "") : "Ainda sem execuções") +
+  const res = estado.ultimo_resultado || "", esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  $("#execucao").innerHTML = (estado.ultima_execucao ? "Última execução: " + dataHoraTxt(estado.ultima_execucao) +
+      (res ? ' · <span class="resumo" title="' + esc(res) + '">' + resumoExec(res) + '</span><span class="completo">' + esc(res) + "</span>" : "") : "Ainda sem execuções") +
     "<br>" + ativas + " locaç" + (ativas === 1 ? "ão ativa" : "ões ativas") + " | robô às terças e quartas, 5h56";
   desenharLista(); atualizarPrevia();
+}
+function resumoExec(r){
+  const t = r.toLowerCase();
+  if (/manuten|falha|erro|sem chrome|indispon/.test(t) && !/^ok/.test(t)) return "falha";
+  if (/alerta|abaixo do alvo|oferta mais barata|encerrad/.test(t) && /enviad/.test(t)) return "ok · alerta enviado";
+  if (/^ok/.test(t)) return "ok";
+  return r.length > 40 ? r.slice(0, 40) + "…" : r;
 }
 function toast(t, cls = "certo"){ const m = $("#msg"); m.innerHTML = '<span class="' + cls + '">' + t + "</span>"; }
 function tratarErro(e){
@@ -539,6 +551,7 @@ function tratarErro(e){
 function mostrar(conectado){ $("#secToken").hidden = conectado; $("#secNova").hidden = !conectado; $("#secLista").hidden = !conectado; }
 
 // ---------- eventos ----------
+$("#execucao").addEventListener("click", ev => { if (ev.target.closest(".resumo")) $("#execucao").classList.toggle("aberto"); });
 $("#form").addEventListener("input", atualizarPrevia);
 $("#form").addEventListener("change", atualizarPrevia);
 $("#frequencia").addEventListener("change", () => { $("#caixaMensal").hidden = $("#frequencia").value !== "fases"; });
