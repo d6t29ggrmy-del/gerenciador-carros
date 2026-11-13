@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<!-- Gerenciador de Aluguel de Carros | v1.5 | 12/11/2026 18:34 | botão Editar locação (formulário completo preenchido, nome mantido, histórico recomeça só se as datas mudarem), preços do robô nos cartões, estimativa de tokens medida (~140 mil por pesquisa no Brasil), plural de pessoas/malas, tarefa às terças e quartas | v1.4 | 04/11/2026 08:10 | frequência por locação (padrão a cada 2 dias ou por fases: mensal na 1ª terça até a data escolhida, depois toda terça, quarta como repescagem), pesquisa extra no dia da parada, campos de entrada em #DDEBF7 | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
+<!-- Gerenciador de Aluguel de Carros | v1.6 | 12/11/2026 19:07 | repositórios renomeados: dados em bot-carros, página em gerenciador-carros | v1.5 | 12/11/2026 18:34 | botão Editar locação (formulário completo preenchido, nome mantido, histórico recomeça só se as datas mudarem), preços do robô nos cartões, estimativa de tokens medida (~140 mil por pesquisa no Brasil), plural de pessoas/malas, tarefa às terças e quartas | v1.4 | 04/11/2026 08:10 | frequência por locação (padrão a cada 2 dias ou por fases: mensal na 1ª terça até a data escolhida, depois toda terça, quarta como repescagem), pesquisa extra no dia da parada, campos de entrada em #DDEBF7 | v1.3 | 20/10/2026 18:38 | linha da última execução em amarelo | v1.2 | 20/10/2026 18:30 | botões Atualizar/Desconectar movidos para o cabeçalho (padrão dos outros gerenciadores) | v1.1 | 18/10/2026 15:15 | Priceline incluída em todos os países | v1.0 | 18/10/2026 14:55 | primeira versão: cadastro de locações com todos os critérios, lista com ofertas encontradas, alteração de alvo e datas, encerramento -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Gerenciador de Aluguel</title>
@@ -112,7 +112,7 @@ header .execucao{max-width:24rem;color:#FFD54F}
   <div class="lado">
   <div class="topo-dir"><button class="btn-topo" id="btnAtualizar">Atualizar dados</button><button class="btn-topo" id="btnEsquecer">Desconectar este navegador</button></div>
   <div class="execucao" id="execucao">Última execução: carregando…</div>
-  <div class="selo" aria-label="Versão do Gerenciador">v1.5 · 12-nov-26<br>6:34 pm</div>
+  <div class="selo" aria-label="Versão do Gerenciador">v1.6 · 12-nov-26<br>7:07 pm</div>
   </div>
 </div></header>
 <main class="wrap">
@@ -120,7 +120,7 @@ header .execucao{max-width:24rem;color:#FFD54F}
 <section id="secToken" hidden>
   <h2>Conectar ao robô</h2>
   <div class="painel">
-    <p>Cole o token de acesso do GitHub. Ele fica guardado só neste navegador e dá acesso apenas ao repositório <b>bot-aluguel</b>.</p>
+    <p>Cole o token de acesso do GitHub. Ele fica guardado só neste navegador e dá acesso apenas ao repositório <b>bot-carros</b>.</p>
     <label for="token">Token de acesso</label>
     <input id="token" type="password" autocomplete="off" placeholder="github_pat_...">
     <div class="acoes"><button class="principal" id="btnToken">Conectar</button></div>
@@ -198,7 +198,7 @@ header .execucao{max-width:24rem;color:#FFD54F}
 </main>
 
 <script>
-const REPO = "d6t29ggrmy-del/bot-aluguel", RAMO = "main";
+const REPO = "d6t29ggrmy-del/bot-carros", RAMO = "main";
 const PARADA_DIAS = 30, INTERVALO_DIAS = 2;
 const CAMPOS = ["id","pais","codigo","retirada_local","devolucao_local","retirada","hora_retirada","devolucao","hora_devolucao",
   "pessoas","malas_medias","categorias","cambio","condutores_adicionais","km_livre","cancelamento_gratis","pagar_retirada","sem_protecao",
@@ -533,7 +533,7 @@ function toast(t, cls = "certo"){ const m = $("#msg"); m.innerHTML = '<span clas
 function tratarErro(e){
   if (e.message === "TOKEN") { mostrar(false); $("#msgToken").innerHTML = '<p class="erro">O token foi recusado ou expirou. Gere um novo e cole acima.</p>'; return; }
   if (e.message === "CONFLITO") { toast("O robô atualizou o arquivo enquanto você editava. Os dados foram recarregados: repita a ação.", "aviso"); carregar(); return; }
-  if (e.message === "404") { toast("Não encontrei o alugueis.csv no repositório bot-aluguel. Confira o nome do repositório.", "erro"); return; }
+  if (e.message === "404") { toast("Não encontrei o alugueis.csv no repositório bot-carros. Confira o nome do repositório.", "erro"); return; }
   toast("Falha de comunicação com o GitHub (" + e.message + "). Verifique a internet e tente de novo.", "erro");
 }
 function mostrar(conectado){ $("#secToken").hidden = conectado; $("#secNova").hidden = !conectado; $("#secLista").hidden = !conectado; }
